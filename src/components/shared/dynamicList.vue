@@ -2,15 +2,16 @@
   <div style="min-width:100%">
     <div class="row">
       <div class="col-4" v-for="item in items" :key="item.dataId">
-        <q-form @submit.prevent="submitHandler(item.id)">
+        <q-form @submit.prevent="submitHandler(item)">
           <slot 
             :item="item" 
-            :destroy="destroy" 
-            :edit="edit" 
-            :closeEdit="closeEdit" 
-            :setAttribute="setAttribute(item.id)"
-            :errorsByAttribute="errorsByAttribute(item.id)"
-            :hasErrorByAttribute="hasErrorByAttribute(item.id)"
+            :destroy="destroy(item)" 
+            :edit="edit(item)" 
+            :closeEdit="closeEdit(item)" 
+            :setAttribute="setAttribute(item)"
+            :errorsByAttribute="errorsByAttribute(item)"
+            :submitLabel="submitLabel(item)"
+            :hasErrorByAttribute="hasErrorByAttribute(item)"
           ></slot>
         </q-form>
       </div>
@@ -28,14 +29,14 @@
         Do you really want to remove this card?
       </q-card-section>
       <q-card-actions>
-        <q-btn flat label="YES" color="red" v-close-popup @click="confirmDestroy()"></q-btn>
-        <q-btn flat label="NO" color="primary" v-close-popup></q-btn>
+        <q-btn flat label="Yes" color="red" v-close-popup @click="confirmDestroy()"></q-btn>
+        <q-btn flat label="No" color="primary" v-close-popup></q-btn>
       </q-card-actions>
     </q-card>
   </q-dialog>
 </template>
 <script>
-  import { defineStore, mapStores } from 'pinia';
+  import { defineStore } from 'pinia';
   import { dynamicListStore } from 'src/stores/dynamicListStore';
   import { computed } from 'vue';
 
@@ -57,14 +58,15 @@
 
       const setFilters = filters => store.setFilters(filters);
       const seeMore = () => store.seeMore();
-      const destroy = id => store.destroy(id);
+      const destroy = item => () => store.destroy(item.id);
       const confirmDestroy = () => store.confirmDestroy();
-      const edit = id => store.edit(id)
-      const closeEdit = id => store.closeEdit(id);
-      const setAttribute = id => (attribute, value) => store.setAttribute(id, attribute, value);
-      const submitHandler = id => store.update(id);
-      const errorsByAttribute = id => attribute => store.errorsByAttribute(id, attribute);
-      const hasErrorByAttribute = id => attribute => store.hasErrorByAttribute(id, attribute);
+      const edit = item => () => store.edit(item.dataId)
+      const closeEdit = item => () => store.closeEdit(item.dataId);
+      const setAttribute = item => (attribute, value) => store.setAttribute(item.dataId, attribute, value);
+      const submitHandler = item => store.save(item.dataId);
+      const errorsByAttribute = item => attribute => store.errorsByAttribute(item.dataId, attribute);
+      const hasErrorByAttribute = item => attribute => store.hasErrorByAttribute(item.dataId, attribute);
+      const submitLabel = (item) => !!item.id ? 'Save' : 'Create';
 
 
       if(!props.storeDefinition){
@@ -95,7 +97,7 @@
         submitHandler,
         errorsByAttribute,
         hasErrorByAttribute,
-        
+        submitLabel,
       }
     }
   }
