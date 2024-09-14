@@ -144,6 +144,9 @@ export const dynamicListStore = {
     pushError(id, errors){
       this.errorsByItem = [{id: id, errors: errors}, ...this.errorsByItem]
     },
+    fillData(dataId, data){
+      this.formItems = this.formItems.map(item => item.dataId === dataId ? {...item, ...data} : item);
+    },
     renderList(){
       this.apiService.index({page: this.page, perPage: this.perPage, term: this.filters.term}).then(response => {
         let dataId = this.dataId;

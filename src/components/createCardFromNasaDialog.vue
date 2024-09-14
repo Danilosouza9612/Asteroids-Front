@@ -4,7 +4,10 @@
       <q-card-section>
         <div class="row justify-between">
           <div class="text-h6">Add asteroids</div>
-          <q-btn flat rounded icon="close" gray v-close-popup></q-btn>
+          <div>
+            <q-btn flat label="Close" color="gray" v-close-popup></q-btn>
+            <q-btn label="Export" color="primary" v-close-popup @click="exportData()"></q-btn>
+          </div>
         </div>
       </q-card-section>
 
@@ -55,6 +58,8 @@ import { compareAsc, format } from 'date-fns';
 import { useCreateAsteroidsModalStore } from 'src/stores/pages/MainPage/createAsteroidsModalStore';
 import { computed, ref } from 'vue';
 
+import * as nasaApiDataHelpers from 'src/helpers/nasaApiDataHelpers';
+
 export default {
   name: 'create-card-from-nasa-dialog',
   setup(){
@@ -81,8 +86,8 @@ export default {
       }
     })
     const selected = computed({
-      get: () => createAsteroidsModalStore.getSelected,
-      set: createAsteroidsModalStore.setSelected
+      get: () => [createAsteroidsModalStore.getSelected],
+      set: value => createAsteroidsModalStore.setSelected(value.length > 0 ? value[0]: [])
     })
     const fetchedItems = computed(() => createAsteroidsModalStore.getFetchedItems);
 
@@ -90,10 +95,10 @@ export default {
     const submitForm = () => {
       form.value.submit()
     }
-
     const submitHandler = (evt) => {
       createAsteroidsModalStore.fetchData();
     }
+    const exportData = () => createAsteroidsModalStore.export();
 
     const diameterSorter = (a,b) => {
       if(a.max < b.max) return -1;
@@ -121,11 +126,8 @@ export default {
       {
         name: 'estimatedDiameter', 
         label: 'Estimated Diameter', 
-        field: row => ({
-          min: Number.parseFloat(row.estimatedDiameter.meters.estimatedDiameterMin), 
-          max: Number.parseFloat(row.estimatedDiameter.meters.estimatedDiameterMax)
-        }),
-        format: val => `${Math.round(val.min)} m - ${Math.round(val.max)} m`,
+        field: nasaApiDataHelpers.parseEstimatedDiameter,
+        format: nasaApiDataHelpers.formatEstimatedDiameter,
         sortable: true,
         sort: diameterSorter
       },
@@ -134,27 +136,27 @@ export default {
         label: 'Is Pontentially Hazardous?', 
         field: row => row.isPontentiallyHazardousAsteroid,
         sortable: true,
-        format: val => val ? 'Yes' : 'No'
+        format: nasaApiDataHelpers.formatIsHazardousAsteroid
       },
       {
         name: 'closeApproachDateFull', 
         label: 'Close Approach Date',
-        field: row => new Date(row.closeApproachData[0].epochDateCloseApproach),
-        format: val => format(val, ' dd MMM yyyy hh:MM'),
+        field: nasaApiDataHelpers.parseCloseApproachDateFromString,
+        format: nasaApiDataHelpers.formatCloseApproachDate,
         sortable: true,
         sort: compareAsc
       },
       {
         name: 'relativeVelocity', 
         label: 'Relative Velocity', 
-        field: row => Number.parseFloat(row.closeApproachData[0].relativeVelocity.kilometersPerHour),
-        format: val => `${Math.round(val)} KPH`,
+        field: nasaApiDataHelpers.parseRelativeVelocity,
+        format: nasaApiDataHelpers.formatRelativeVelocity,
       },
       {
         name: 'missDistance', 
         label: 'Miss Distance', 
-        field: row => Number.parseFloat(row.closeApproachData[0].missDistance.kilometers),
-        format: val => `${Math.round(val)} KM`
+        field: nasaApiDataHelpers.parseMissDistance,
+        format: nasaApiDataHelpers.formatMissDistance
       }
     ])
 
@@ -169,6 +171,7 @@ export default {
 
       submitForm,
       submitHandler,
+      exportData,
 
       columns,
     }

@@ -27,6 +27,7 @@
               <q-btn flat round color="red" icon="delete" size="sm" @click="destroy()" />
             </template>
             <template v-else>
+              <q-btn v-if="!item.id" title="Export from NASA" flat round color="gray" icon="download" size="sm" @click="initExport(item.dataId)" />
               <q-btn flat color="gray" label="Close" @click="closeEdit()" />    
               <q-btn color="primary" type="submit" :label="submitLabel" />                    
             </template>
@@ -35,11 +36,12 @@
       </q-card-section>
       <q-card-section>
         <q-input 
+          class="q-pt-none"
           @update:model-value="setAttribute('description', $event)"
           placeholder="Description"
           type="textarea"
           :model-value="item.description" 
-          style="width: 100%" 
+          style="width: 100%"
           :readonly="!item.form" 
           :borderless="!item.form"
         />
@@ -63,8 +65,8 @@ asteroidsStore.renderList();
 
 const createAsteroidsModalStore = useCreateAsteroidsModalStore();
 
-function showCreateAsteroidsModal(){
-  createAsteroidsModalStore.showModal();
+function initExport(id){
+  createAsteroidsModalStore.initExport(id);
 }
 
 function create(){

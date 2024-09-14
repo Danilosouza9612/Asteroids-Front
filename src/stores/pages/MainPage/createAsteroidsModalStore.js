@@ -2,9 +2,12 @@ import { format } from "date-fns";
 import { defineStore } from "pinia";
 import { toCamel } from "snake-camel";
 import { feed } from "src/services/apiNasaService";
+import { useAsteroidsStore } from "./asteroidsListStore";
+import * as nasaApiDataHelpers from 'src/helpers/nasaApiDataHelpers';
 
 export const useCreateAsteroidsModalStore = defineStore('createAsteroidsModalStore', {
   state: () =>({
+    idToExport: null,
     loading: false,
     show: false,
     fetchedItems: [],
@@ -22,8 +25,21 @@ export const useCreateAsteroidsModalStore = defineStore('createAsteroidsModalSto
   },
 
   actions: {
-    showModal(){
+    initExport(id){
       this.show = true;
+      this.idToExport = id;
+    },
+    export(){
+      let dataToExport = this.selected;
+      useAsteroidsStore().fillData(this.idToExport, {
+        title: this.selected.name,
+        description: `Absolute Magnitude: ${dataToExport.absoluteMagnitudeH}\n`+
+          `Estimated Diameter: ${nasaApiDataHelpers.formatEstimatedDiameter(nasaApiDataHelpers.parseEstimatedDiameter(dataToExport))}\n` +
+          `Is potentially hazardous?: ${nasaApiDataHelpers.formatIsHazardousAsteroid(dataToExport)}\n`+
+          `Close Approach Date: ${nasaApiDataHelpers.formatCloseApproachDate(nasaApiDataHelpers.parseCloseApproachDateFromString(dataToExport))}\n`+
+          `Relative velocity: ${nasaApiDataHelpers.formatRelativeVelocity(nasaApiDataHelpers.parseRelativeVelocity(dataToExport)) }\n`+
+          `Miss Distance: ${nasaApiDataHelpers.formatMissDistance(nasaApiDataHelpers.parseMissDistance(dataToExport))}`
+      });
     },
     hideModal(){
       this.show = false;
