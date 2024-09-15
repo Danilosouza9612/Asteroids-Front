@@ -1,24 +1,33 @@
 <template>
   <div style="min-width:100%">
     <div class="row">
-      <div class="col-4" v-for="item in items" :key="item.dataId">
-        <q-form @submit.prevent="submitHandler(item)">
+      <div class="col-12 col-md-4" v-for="item in itemsWithForms" :key="item.dataId">
+        <dynamic-list-item
+          :item="item"
+          @destroy="destroy"
+          @edit="editItem"
+          @save="save"
+          @close-edit="closeEdit"
+          @set-attribute="setAttribute"
+          v-slot="{item, destroy, edit, closeForm, setAttribute, submitLabel}"
+        >
           <slot 
             :item="item" 
-            :destroy="destroy(item)" 
-            :edit="edit(item)" 
-            :closeEdit="closeEdit(item)" 
-            :setAttribute="setAttribute(item)"
-            :errorsByAttribute="errorsByAttribute(item)"
-            :submitLabel="submitLabel(item)"
-            :hasErrorByAttribute="hasErrorByAttribute(item)"
+            :destroy="destroy" 
+            :edit="edit" 
+            :closeForm="closeForm" 
+            :setAttribute="setAttribute"
+            :submitLabel="submitLabel"
           ></slot>
-        </q-form>
+        </dynamic-list-item>
       </div>
     </div>
-    <div class="row justify-center ">
-      <q-btn flat label="SEE MORE" color="primary" @click="seeMore()" :disable="!seeMoreEnabled"></q-btn>
+    <div v-if="canSeeMore" class="row justify-center ">
+      <q-btn flat label="See More" color="primary" @click="seeMore()"></q-btn>
     </div>
+    <q-inner-loading :showing="loading">
+      <q-spinner size="50px" color="primary" />
+    </q-inner-loading>
   </div>
   <q-dialog v-model="modalDestroyVisibility" backdrop-filter="hue-rotate(120deg)">
     <q-card>
@@ -36,68 +45,72 @@
   </q-dialog>
 </template>
 <script>
-  import { defineStore } from 'pinia';
-  import { dynamicListStore } from 'src/stores/dynamicListStore';
-  import { computed } from 'vue';
+  import DynamicListItem from './dynamicListItem.vue';
+  import { computed, ref } from 'vue';
 
   export default {
     name: 'dynamic-list',
-    props: {
-      storeName: String,
-      controllerName: String,
-      storeDefinition: Function
+    emits: ['save', 'destroy', 'seeMore', 'update:modelValue'],
+    components: {
+      DynamicListItem
     },
-    setup(props){
-      const store = props.storeDefinition!=null ? props.storeDefinition() : defineStore(props.storeName, dynamicListStore)();
-
-      const items = computed(() => store.getItems);
-      const page = computed(() => store.getPage);
-      const isModalDestroyVisible = computed(() => store.isModalDestroyVisible);
-      const idToDestroy = computed(() => store.idToDestroy);
-      const seeMoreEnabled = computed(() => store.seeMore);
-
-      const setFilters = filters => store.setFilters(filters);
-      const seeMore = () => store.seeMore();
-      const destroy = item => () => store.destroy(item.id);
-      const confirmDestroy = () => store.confirmDestroy();
-      const edit = item => () => store.edit(item.dataId)
-      const closeEdit = item => () => store.closeEdit(item.dataId);
-      const setAttribute = item => (attribute, value) => store.setAttribute(item.dataId, attribute, value);
-      const submitHandler = item => store.save(item.dataId);
-      const errorsByAttribute = item => attribute => store.errorsByAttribute(item.dataId, attribute);
-      const hasErrorByAttribute = item => attribute => store.hasErrorByAttribute(item.dataId, attribute);
-      const submitLabel = (item) => !!item.id ? 'Save' : 'Create';
-
-
-      if(!props.storeDefinition){
-        store.setApiService(props.controllerName);
-        store.renderList();
+    props: {
+      modelValue: Array,
+      items: Array,
+      loading: Boolean,
+      canSeeMore: {
+        type: Boolean,
+        default: false
       }
+    },
+    setup(props, { emit }){
+      const modalDestroyVisibility = ref(false);
+      const idToDestroy = ref(null);
 
-      const modalDestroyVisibility = computed({
-        get: () => store.isModalDestroyVisible,
-        set: () => store.hideModal()
-      })
+      const seeMore = () => emit('seeMore');
+      const confirmDestroy = () => emit('destroy', idToDestroy.value);
+
+      const editItem = (data) => emit('update:modelValue', [...props.modelValue, {...data, loading: false}]);
+      const setAttribute = (data) => {
+        emit('update:modelValue', props.modelValue.map(item => item.dataId === data.dataId ? {...item, [data.attribute]: data.value} : item));
+      }
+      const closeEdit = (dataId) => emit('update:modelValue', props.modelValue.filter(item => item.dataId !== dataId));
+
+      const itemsWithForms = computed(() => {
+        let formItemsIds = props.modelValue
+          .filter(item => !!item.id)
+          .map(item => item.dataId);
+
+        let newFormItems = props.modelValue.filter(item => !item.id).map(item => ({...item, form: true}));
+
+        return newFormItems.concat(props.items.map(
+          item => formItemsIds.includes(item.dataId) ? {
+            ...props.modelValue.find(eItem => eItem.dataId === item.dataId), form: true
+          } : {
+            ...item, edit: false
+          }
+        ));
+      });
+
+      const destroy = (id) => {
+        modalDestroyVisibility.value = true;
+        idToDestroy.value = id;
+      }
+      const save = (dataId) => emit('save', dataId);
+
 
       return {
-        items, 
-        page, 
-        isModalDestroyVisible,
         idToDestroy,
         modalDestroyVisibility,
-        seeMoreEnabled,
+        itemsWithForms,
 
-        setFilters, 
         seeMore,
-        destroy,
         confirmDestroy,
-        edit,
-        closeEdit,
+        editItem,
         setAttribute,
-        submitHandler,
-        errorsByAttribute,
-        hasErrorByAttribute,
-        submitLabel,
+        destroy,
+        save,
+        closeEdit
       }
     }
   }

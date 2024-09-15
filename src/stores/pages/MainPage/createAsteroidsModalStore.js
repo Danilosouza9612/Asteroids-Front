@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { addHours, format } from "date-fns";
 import { defineStore } from "pinia";
 import { toCamel } from "snake-camel";
 import { feed } from "src/services/apiNasaService";
@@ -21,7 +21,8 @@ export const useCreateAsteroidsModalStore = defineStore('createAsteroidsModalSto
     getStartDate: (state) => !!state.startDate ? format(state.startDate, 'yyyy/MM/dd') : null,
     getEndDate: (state) => !!state.endDate ? format(state.endDate, 'yyyy/MM/dd') : null,
     getFetchedItems: (state) => state.fetchedItems,
-    getSelected: (state) => state.selected
+    getSelected: (state) => state.selected,
+    getLoading: (state) => state.loading
   },
 
   actions: {
@@ -43,12 +44,15 @@ export const useCreateAsteroidsModalStore = defineStore('createAsteroidsModalSto
     },
     hideModal(){
       this.show = false;
+      this.selected = [];
     },
     setStartDate(startDate){
-      this.startDate = new Date(startDate);
+      const date = new Date(startDate);
+      this.startDate = addHours(date, date.getTimezoneOffset()/60);
     },
     setEndDate(endDate){
-      this.endDate = new Date(endDate);
+      const date = new Date(endDate);
+      this.endDate = addHours(date, date.getTimezoneOffset()/60);
     },
     setSelected(selected){
       this.selected = selected;
