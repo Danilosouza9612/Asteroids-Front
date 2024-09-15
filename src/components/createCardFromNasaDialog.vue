@@ -1,9 +1,13 @@
 <template>
-  <q-dialog v-model="modalVisibility" backdrop-filter="hue-rotate(120deg)" :full-width="true">
+  <q-dialog 
+    v-model="modalVisibility" 
+    backdrop-filter="hue-rotate(120deg)" 
+    :full-width="true"
+  >
     <q-card>
       <q-card-section>
         <div class="row justify-between">
-          <div class="text-h6">Add asteroids</div>
+          <div class="text-h6">Export Asteroid</div>
           <div>
             <q-btn flat label="Close" color="gray" v-close-popup></q-btn>
             <q-btn label="Export" color="primary" v-close-popup @click="exportData()"></q-btn>
@@ -12,8 +16,12 @@
       </q-card-section>
 
       <q-card-section>
+        <div>List nearests asteroid according with date range bellow (Maximum range: 7 days)</div>
+      </q-card-section>
+
+      <q-card-section>
         <q-form class="row" ref="form" @submit="submitHandler">
-          <div class="col-md-2 q-mr-sm">
+          <div class="col-12 col-sm-4 col-md-2 q-mr-md">
             <q-input v-model="startDate" label="Start Date" mask="date" :rules="['date']">
               <template v-slot:append>
                 <q-icon name="event" class="cursor-pointer">
@@ -24,12 +32,12 @@
               </template>
             </q-input>
           </div>
-          <div class="col-md-2 q-ml-sm">
+          <div class="col-12 col-sm-4 col-md-2">
             <q-input v-model="endDate" label="End date" mask="date" :rules="['date']">
               <template v-slot:append>
                 <q-icon name="event" class="cursor-pointer">
                   <q-popup-proxy>
-                    <q-date v-model="endDate"/>
+                    <q-date v-model="endDate" mask="YYYY-MM-DD" />
                   </q-popup-proxy>
                 </q-icon>
               </template>
@@ -42,9 +50,11 @@
         <div class="full-width">
           <q-table
             flat
+            :grid="isMobile"
             v-model:selected="selected"
             :rows="fetchedItems"
             :columns="columns"
+            :loading="loading"
             selection="single"
             row-key="name"
           />
@@ -54,15 +64,18 @@
   </q-dialog>
 </template>
 <script>
-import { compareAsc, format } from 'date-fns';
+import { compareAsc } from 'date-fns';
 import { useCreateAsteroidsModalStore } from 'src/stores/pages/MainPage/createAsteroidsModalStore';
 import { computed, ref } from 'vue';
 
 import * as nasaApiDataHelpers from 'src/helpers/nasaApiDataHelpers';
+import { useQuasar } from 'quasar';
 
 export default {
   name: 'create-card-from-nasa-dialog',
   setup(){
+    const $q = useQuasar();
+
     const createAsteroidsModalStore = useCreateAsteroidsModalStore();
 
     const form = ref(null)
@@ -90,6 +103,7 @@ export default {
       set: value => createAsteroidsModalStore.setSelected(value.length > 0 ? value[0]: [])
     })
     const fetchedItems = computed(() => createAsteroidsModalStore.getFetchedItems);
+    const loading = computed(() => createAsteroidsModalStore.loading);
 
 
     const submitForm = () => {
@@ -99,6 +113,8 @@ export default {
       createAsteroidsModalStore.fetchData();
     }
     const exportData = () => createAsteroidsModalStore.export();
+
+    const isMobile = computed(() => $q.screen.lt.md );
 
     const diameterSorter = (a,b) => {
       if(a.max < b.max) return -1;
@@ -121,7 +137,6 @@ export default {
         name: 'absoluteMagnitudeH', 
         label: 'Absolute Magnitude',
         field: row => row.absoluteMagnitudeH,
-        sortable: true
       },
       {
         name: 'estimatedDiameter', 
@@ -161,6 +176,7 @@ export default {
     ])
 
     return {
+      isMobile,
       form,
 
       modalVisibility,
@@ -168,6 +184,7 @@ export default {
       endDate,
       fetchedItems,
       selected,
+      loading,
 
       submitForm,
       submitHandler,

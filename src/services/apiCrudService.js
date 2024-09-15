@@ -6,9 +6,9 @@ export class ApiCrudService{
     this.controllerName = controllerName;
   }
 
-  index({page=1, perPage=10, term=''}){
+  index({offset=0, limit=10, term=''}){
     return api.get(
-      `${this.collectionPreffix()}?page=${page}&per_page=${perPage}&term=${term}`, 
+      `${this.collectionPreffix()}?offset=${offset}&limit=${limit}&term=${term}`, 
       {
         crossdomain: true, 
         headers: {
