@@ -22,22 +22,22 @@
       <q-card-section>
         <q-form class="row" ref="form" @submit="submitHandler">
           <div class="col-12 col-sm-4 col-md-2 q-mr-md">
-            <q-input v-model="startDate" label="Start Date" mask="date" :rules="['date']">
+            <q-input filled v-model="startDate" label="Start Date" mask="date" :error="!!startDateError" :error-message="startDateError">
               <template v-slot:append>
                 <q-icon name="event" class="cursor-pointer">
                   <q-popup-proxy>
-                    <q-date v-model="startDate" mask="YYYY-MM-DD"/>
+                    <q-date v-model="startDate"/>
                   </q-popup-proxy>
                 </q-icon>
               </template>
             </q-input>
           </div>
           <div class="col-12 col-sm-4 col-md-2">
-            <q-input v-model="endDate" label="End date" mask="date" :rules="['date']">
+            <q-input filled v-model="endDate" label="End date" mask="date" :error="!!endDateError" :error-message="endDateError">
               <template v-slot:append>
                 <q-icon name="event" class="cursor-pointer">
                   <q-popup-proxy>
-                    <q-date v-model="endDate" mask="YYYY-MM-DD" />
+                    <q-date v-model="endDate" />
                   </q-popup-proxy>
                 </q-icon>
               </template>
@@ -64,21 +64,24 @@
   </q-dialog>
 </template>
 <script>
-import { compareAsc } from 'date-fns';
-import { useCreateAsteroidsModalStore } from 'src/stores/pages/MainPage/createAsteroidsModalStore';
+import { compareAsc, differenceInCalendarDays } from 'date-fns';
+import { useNearestAsteroidsStore } from 'src/stores/pages/MainPage/nearestAsteroidsStore';
 import { computed, ref } from 'vue';
 
 import * as nasaApiDataHelpers from 'src/helpers/nasaApiDataHelpers';
 import { useQuasar } from 'quasar';
 
 export default {
-  name: 'create-card-from-nasa-dialog',
+  name: 'nearest-asteroids-modal',
   setup(){
     const $q = useQuasar();
 
-    const createAsteroidsModalStore = useCreateAsteroidsModalStore();
+    const createAsteroidsModalStore = useNearestAsteroidsStore();
 
-    const form = ref(null)
+    const form = ref(null);
+
+    const startDateError = ref(null);
+    const endDateError = ref(null);
 
     const modalVisibility = computed({
       get: () => createAsteroidsModalStore.getShow,
@@ -105,9 +108,21 @@ export default {
     const fetchedItems = computed(() => createAsteroidsModalStore.getFetchedItems);
     const loading = computed(() => createAsteroidsModalStore.loading);
 
-
     const submitForm = () => {
-      form.value.submit()
+      if(!startDate.value){
+        startDateError.value = 'Cannot be blank'
+      }else if(compareAsc(endDate.value, startDate.value)==-1){
+        startDateError.value = 'Cannot be greater than end date';
+        endDateError.value = 'Cannot be lesser than great date';
+      }else if(differenceInCalendarDays(endDate.value, startDate.value)>7){
+        startDateError.value = 'Range is higher than 7 days';
+        endDateError.value = 'Range is higher than 7 days';
+      }else{
+        startDateError.value = null;
+        endDateError.value = null;
+        form.value.resetValidation();
+        form.value.submit()
+      }
     }
     const submitHandler = (evt) => {
       createAsteroidsModalStore.fetchData();
@@ -178,6 +193,8 @@ export default {
     return {
       isMobile,
       form,
+      startDateError,
+      endDateError,
 
       modalVisibility,
       startDate,

@@ -1,4 +1,3 @@
-import { date } from 'quasar';
 import { toCamel } from 'snake-camel';
 import { ApiCrudService } from 'src/services/apiCrudService';
 
@@ -15,7 +14,7 @@ export const dynamicListStore = {
     apiService: null,
     filters: {},
     formItems: [],
-    errorsByItem: [] //{id, errors}
+    errors: [] //{id, errors}
   }),
 
   getters: {
@@ -25,15 +24,7 @@ export const dynamicListStore = {
     canSeeMore: state => state.items.length < state.total,
     getFormItems: state => state.formItems,
     getItems: state => state.items,
-    hasErrorByAttribute: state => (dataId, attribute) => {
-      let errorByItem = state.errorsByItem.find(item => item.dataId === dataId);
-      return errorByItem!==undefined && errorByItem.errors[attribute]!==undefined;
-    },
-    errorsByAttribute: state => (dataId, attribute) => {
-      let errorByItem = state.errorsByItem.find(item => item.dataId === dataId);
-      if(!!errorByItem) return !!errorByItem.errors[attribute] ? errorByItem.errors[attribute].join(". ") : null;
-      return null;
-    }
+    getErrors: state => state.errors
   },
 
   actions: {
@@ -111,10 +102,10 @@ export const dynamicListStore = {
       this.formItems = [...this.formItems.map(item => item.dataId === dataId ? ({...item, [attribute] : value}) : item)];
     },
     cleanError(dataId){
-      this.errorsByItem = this.errorsByItem.filter(item => item.dataId !== dataId);
+      this.errors = this.errors.filter(item => item.dataId !== dataId);
     },
     pushError(dataId, errors){
-      this.errorsByItem = [{dataId: dataId, errors: errors}, ...this.errorsByItem];
+      this.errors = [{dataId: dataId, errors: errors}, ...this.errors];
     },
     fillData(dataId, data){
       this.formItems = this.formItems.map(item => item.dataId === dataId ? {...item, ...data} : item);

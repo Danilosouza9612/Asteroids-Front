@@ -2,17 +2,17 @@ import { addHours, format } from "date-fns";
 import { defineStore } from "pinia";
 import { toCamel } from "snake-camel";
 import { feed } from "src/services/apiNasaService";
-import { useAsteroidsStore } from "./asteroidsListStore";
+import { useAsteroidsStore } from "./asteroidsStore";
 import * as nasaApiDataHelpers from 'src/helpers/nasaApiDataHelpers';
 
-export const useCreateAsteroidsModalStore = defineStore('createAsteroidsModalStore', {
+export const useNearestAsteroidsStore = defineStore('useNearestAsteroidsStore', {
   state: () =>({
     idToExport: null,
     loading: false,
     show: false,
     fetchedItems: [],
     selected: [],
-    startDate: null,
+    startDate: new Date(),
     endDate: null
   }),
 
@@ -29,6 +29,7 @@ export const useCreateAsteroidsModalStore = defineStore('createAsteroidsModalSto
     initExport(id){
       this.show = true;
       this.idToExport = id;
+      this.fetchData();
     },
     export(){
       let dataToExport = this.selected;
@@ -36,7 +37,7 @@ export const useCreateAsteroidsModalStore = defineStore('createAsteroidsModalSto
         title: this.selected.name,
         description: `Absolute Magnitude: ${dataToExport.absoluteMagnitudeH}\n`+
           `Estimated Diameter: ${nasaApiDataHelpers.formatEstimatedDiameter(nasaApiDataHelpers.parseEstimatedDiameter(dataToExport))}\n` +
-          `Is potentially hazardous?: ${nasaApiDataHelpers.formatIsHazardousAsteroid(dataToExport)}\n`+
+          `Is potentially hazardous?: ${nasaApiDataHelpers.formatIsHazardousAsteroid(dataToExport.isPotentiallyHazardousAsteroid)}\n`+
           `Close Approach Date: ${nasaApiDataHelpers.formatCloseApproachDate(nasaApiDataHelpers.parseCloseApproachDateFromString(dataToExport))}\n`+
           `Relative velocity: ${nasaApiDataHelpers.formatRelativeVelocity(nasaApiDataHelpers.parseRelativeVelocity(dataToExport)) }\n`+
           `Miss Distance: ${nasaApiDataHelpers.formatMissDistance(nasaApiDataHelpers.parseMissDistance(dataToExport))}`
@@ -45,6 +46,9 @@ export const useCreateAsteroidsModalStore = defineStore('createAsteroidsModalSto
     hideModal(){
       this.show = false;
       this.selected = [];
+      this.startDate = new Date();
+      this.endDate = null;
+      this.fetchedItems = [];
     },
     setStartDate(startDate){
       const date = new Date(startDate);

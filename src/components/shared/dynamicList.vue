@@ -4,12 +4,13 @@
       <div class="col-12 col-md-4" v-for="item in itemsWithForms" :key="item.dataId">
         <dynamic-list-item
           :item="item"
+          :errors="errorByItem(item)"
           @destroy="destroy"
           @edit="editItem"
           @save="save"
           @close-edit="closeEdit"
           @set-attribute="setAttribute"
-          v-slot="{item, destroy, edit, closeForm, setAttribute, submitLabel}"
+          v-slot="{item, destroy, edit, closeForm, setAttribute, submitLabel, errorByAttribute }"
         >
           <slot 
             :item="item" 
@@ -18,6 +19,7 @@
             :closeForm="closeForm" 
             :setAttribute="setAttribute"
             :submitLabel="submitLabel"
+            :errorByAttribute ="errorByAttribute"
           ></slot>
         </dynamic-list-item>
       </div>
@@ -58,6 +60,7 @@
       modelValue: Array,
       items: Array,
       loading: Boolean,
+      errors: Array,
       canSeeMore: {
         type: Boolean,
         default: false
@@ -75,6 +78,11 @@
         emit('update:modelValue', props.modelValue.map(item => item.dataId === data.dataId ? {...item, [data.attribute]: data.value} : item));
       }
       const closeEdit = (dataId) => emit('update:modelValue', props.modelValue.filter(item => item.dataId !== dataId));
+
+      const errorByItem = (item) => {
+        const founded = props.errors.find(error => error.dataId == item.dataId)
+        return !!founded ? founded.errors : null
+      }
 
       const itemsWithForms = computed(() => {
         let formItemsIds = props.modelValue
@@ -103,6 +111,7 @@
         idToDestroy,
         modalDestroyVisibility,
         itemsWithForms,
+        errorByItem,
 
         seeMore,
         confirmDestroy,

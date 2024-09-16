@@ -6,6 +6,7 @@
         :edit="edit" 
         :closeForm="closeForm" 
         :setAttribute="setAttribute"
+        :errorByAttribute="errorByAttribute"
         :submitLabel="submitLabel"
       ></slot>
     <q-inner-loading :showing="item.loading">
@@ -21,6 +22,7 @@ export default {
   emits: ['save', 'edit', 'destroy', 'closeEdit', 'setAttribute'],
   props: {
     item: Object,
+    errors: Object
   },
   setup(props, { emit }){
     const form = ref(null);
@@ -37,6 +39,8 @@ export default {
     const setAttribute = (attribute, value) => emit('setAttribute', {dataId: props.item.dataId, attribute: attribute, value: value});
     const submitLabel = computed(() => !!props.item.id ? 'Save' : 'Create');
 
+    const errorByAttribute = attribute => !!props.errors && props.errors[attribute] ? props.errors[attribute].join('. ') : null
+
     return { 
       form,
 
@@ -45,6 +49,7 @@ export default {
       closeForm,
       setAttribute,
       submitHandler,
+      errorByAttribute,
 
       submitLabel,
     }

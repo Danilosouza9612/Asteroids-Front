@@ -18,11 +18,12 @@
     <dynamic-list
       v-model="formItems"
       :items="items"
+      :errors="errors"
       :can-see-more="canSeeMore"
       @save="save"
       @destroy="destroy"
       @see-more="seeMore"
-      v-slot="{ item, destroy, edit, closeForm, setAttribute, submitLabel }"
+      v-slot="{ item, destroy, edit, closeForm, setAttribute, submitLabel, errorByAttribute }"
     >
       <q-card flat class="card-min-height column ">
         <q-card-section class="q-pb-none col-auto">
@@ -36,8 +37,9 @@
                 :borderless="!item.form" 
                 :model-value="item.title"  
                 :readonly="!item.form"
-                dense="true"
                 bottom-slots=""
+                :error="!!errorByAttribute('title')"
+                :error-message="errorByAttribute('title')"
                 :rules="[val => val.length > 0 || 'Cannot be blank', val => val.length <= 2000 || 'Maximum 2000 characters']"
               >
                 <template v-slot:error>
@@ -71,7 +73,7 @@
         <q-card-section class="q-pt-none q-pb-none col">
           <q-input
             :filled="item.form"
-            class="q-pt-none"
+            class="q-pt-none text-area-container"
             @update:model-value="setAttribute('description', $event)"
             placeholder="Description"
             type="textarea"
@@ -79,6 +81,8 @@
             :model-value="item.description" 
             :readonly="!item.form" 
             :borderless="!item.form"
+            :error="!!errorByAttribute('description')"
+            :error-message="errorByAttribute('description')"
             :rules="[val => val.length > 0 || 'Cannot be blank', val => val.length <= 2000 || 'Maximum 2000 characters']"
           />
         </q-card-section>
@@ -89,18 +93,17 @@
         </q-card-section>
       </q-card>
     </dynamic-list>
-    <create-card-from-nasa-dialog />
+    <nearest-asteroids-modal />
   </div>
 </template>
 
 <script setup>
 import DynamicList from 'src/components/shared/dynamicList.vue';
-import createCardFromNasaDialog from 'src/components/createCardFromNasaDialog.vue';
-import { useAsteroidsStore } from 'src/stores/pages/MainPage/asteroidsListStore';
-import { useCreateAsteroidsModalStore } from 'src/stores/pages/MainPage/createAsteroidsModalStore';
+import nearestAsteroidsModal from 'src/components/nearestAsteroidsModal.vue';
+import { useAsteroidsStore } from 'src/stores/pages/MainPage/asteroidsStore';
+import { useNearestAsteroidsStore } from 'src/stores/pages/MainPage/nearestAsteroidsStore';
 import { useQuasar } from 'quasar';
 import { computed } from 'vue';
-import { format } from 'date-fns';
 
 const $q = useQuasar();
 
@@ -113,6 +116,7 @@ asteroidsStore.setNewDataModel({title: '', description: ''});
 asteroidsStore.index(9);
 
 const items = computed(() => asteroidsStore.getItems);
+const errors = computed(() => asteroidsStore.getErrors);
 const formItems = computed({
   get: () => asteroidsStore.getFormItems,
   set: asteroidsStore.setFormItems
@@ -121,9 +125,12 @@ const canSeeMore = computed(() => asteroidsStore.canSeeMore);
 
 const save = (dataId) => asteroidsStore.save(dataId);
 const destroy = (dataId) => asteroidsStore.destroy(dataId);
-const seeMore = () => asteroidsStore.seeMore();
+const seeMore = () => {
+  console.log("seeMore")
+  asteroidsStore.seeMore()
+};
 
-const createAsteroidsModalStore = useCreateAsteroidsModalStore();
+const createAsteroidsModalStore = useNearestAsteroidsStore();
 
 function initExport(id){
   createAsteroidsModalStore.initExport(id);
@@ -150,5 +157,8 @@ defineOptions({
   }
   .remove-item{
     color: red
+  }
+  .text-area-container textarea {
+    resize: none !important;
   }
 </style>
