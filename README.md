@@ -1,6 +1,6 @@
 # Asteroid Database (nasa-project-front)
 
-An database to save informations about asteroids using NASA NeoWS.
+An database to save informations about nearest asteroids using NASA NeoWS.
 
 ## Install the dependencies
 ```bash
